@@ -1,6 +1,6 @@
 import os
 import pdfkit
-from jurisprudencia_api import TCUJurisprudenciaAPI, AnalisadorAcordaos, GeradorInsights
+from jurisprudencia_api import ExportadorAcordaos
 
 class ExportacaoService:
     """
