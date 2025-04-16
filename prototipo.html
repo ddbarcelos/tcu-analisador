@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCU Jurisprudência - Protótipo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #1A5276;
+            --secondary-color: #27AE60;
+            --accent-color: #E67E22;
+            --danger-color: #C0392B;
+            --light-gray: #F2F3F4;
+            --medium-gray: #BDC3C7;
+            --dark-gray: #34495E;
+            --text-dark: #17202A;
+            --text-light: #FFFFFF;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Open Sans', sans-serif;
+            color: var(--text-dark);
+            background-color: var(--light-gray);
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+        }
+        
+        .sidebar {
+            background-color: white;
+            height: calc(100vh - 56px);
+            position: sticky;
+            top: 56px;
+            overflow-y: auto;
+            padding: 20px;
+            border-right: 1px solid var(--medium-gray);
+        }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-type-icon {
+            background-color: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+        
+        .card-favorite {
+            color: var(--medium-gray);
+            cursor: pointer;
+        }
+        
+        .card-favorite:hover, .card-favorite.active {
+            color: gold;
+        }
+        
+        .card-metadata {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: var(--light-gray);
+            font-size: 0.9rem;
+        }
+        
+        .card-theme {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .theme-badge {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        
+        .subtheme-badge {
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        
+        .card-summary {
+            padding: 15px;
+        }
+        
+        .card-tags {
+            padding: 10px 15px;
+            border-top: 1px solid var(--light-gray);
+            font-size: 0.85rem;
+        }
+        
+        .tag {
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+        
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .btn-action {
+            font-size: 0.9rem;
+        }
+        
+        .timeline {
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background-color: var(--primary-color);
+            transform: translateX(-50%);
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-item:nth-child(odd) {
+            margin-left: 50%;
+            padding-left: 30px;
+        }
+        
+        .timeline-item:nth-child(even) {
+            margin-right: 50%;
+            padding-right: 30px;
+            text-align: right;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            top: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+        
+        .timeline-item:nth-child(odd) .timeline-dot {
+            left: -10px;
+        }
+        
+        .timeline-item:nth-child(even) .timeline-dot {
+            right: -10px;
+        }
+        
+        .timeline-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .timeline-date {
+            font-size: 0.9rem;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .filter-section {
+            margin-bottom: 20px;
+        }
+        
+        .filter-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .filter-group {
+            margin-bottom: 15px;
+        }
+        
+        .view-selector {
+            margin-bottom: 20px;
+        }
+        
+        .view-btn {
+            background-color: white;
+            border: 1px solid var(--medium-gray);
+            color: var(--dark-gray);
+        }
+        
+        .view-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .cluster-view {
+            height: 400px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cluster {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cluster:hover {
+            transform: scale(1.05);
+        }
+        
+        .cluster-1 {
+            background-color: var(--primary-color);
+            width: 120px;
+            height: 120px;
+            top: 50px;
+            left: 100px;
+        }
+        
+        .cluster-2 {
+            background-color: var(--secondary-color);
+            width: 150px;
+            height: 150px;
+            top: 150px;
+            left: 300px;
+        }
+        
+        .cluster-3 {
+            background-color: var(--accent-color);
+            width: 100px;
+            height: 100px;
+            top: 100px;
+            left: 500px;
+        }
+        
+        .cluster-4 {
+            background-color: var(--danger-color);
+            width: 80px;
+            height: 80px;
+            top: 250px;
+            left: 150px;
+        }
+        
+        .cluster-5 {
+            background-color: var(--dark-gray);
+            width: 110px;
+            height: 110px;
+            top: 220px;
+            left: 450px;
+        }
+        
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                height: auto;
+                position: relative;
+                top: 0;
+            }
+            
+            .timeline-item:nth-child(odd),
+            .timeline-item:nth-child(even) {
+                margin-left: 30px;
+                margin-right: 0;
+                padding-left: 30px;
+                padding-right: 0;
+                text-align: left;
+            }
+            
+            .timeline-line {
+                left: 15px;
+            }
+            
+            .timeline-item:nth-child(odd) .timeline-dot,
+            .timeline-item:nth-child(even) .timeline-dot {
+                left: 5px;
+                right: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-bank me-2"></i>
+                TCU Jurisprudência
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <form class="d-flex ms-auto me-3 my-2">
+                    <div class="input-group">
+                        <input class="form-control" type="search" placeholder="Pesquisa global..." aria-label="Search">
+                        <button class="btn btn-light" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <ul class="navbar-nav mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">
+                            <i class="bi bi-house-door"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-star"></i> Favoritos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-bell"></i> Alertas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-lightbulb"></i> Insights
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">Perfil</a></li>
+                            <li><a class="dropdown-item" href="#">Configurações</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Sair</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar com filtros -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="filter-section">
+                    <h5 class="filter-title">Filtros Avançados</h5>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Órgão Colegiado</label>
+                        <select class="form-select form-select-sm">
+                            <option selected>Todos</option>
+                            <option>Plenário</option>
+                            <option>Primeira Câmara</option>
+                            <option>Segunda Câmara</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Relator</label>
+                        <select class="form-select form-select-sm">
+                            <option selected>Todos</option>
+                            <option>Ministro A</option>
+                            <option>Ministro B</option>
+                            <option>Ministro C</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Tema</label>
+                        <select class="form-select form-select-sm">
+                            <option selected>Todos</option>
+                            <option>Licitações e Contratos</option>
+                            <option>Responsabilidade</option>
+                            <option>Convênio</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Subtema</label>
+                        <select class="form-select form-select-sm">
+                            <option selected>Todos</option>
+                            <option>Pregão Eletrônico</option>
+                            <option>Dispensa de Licitação</option>
+                            <option>Inexigibilidade</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Tipo de Decisão</label>
+                        <select class="form-select form-select-sm">
+                            <option selected>Todos</option>
+                            <option>Determinação</option>
+                            <option>Recomendação</option>
+                            <option>Multa</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Relevância</label>
+                        <input type="range" class="form-range" min="0" max="100" value="50">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Inovação</label>
+                        <input type="range" class="form-range" min="0" max="100" value="50">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="form-label">Período</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="excluirAposentadoria">
+                            <label class="form-check-label" for="excluirAposentadoria">
+                                Excluir aposentadoria
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="excluirPessoal">
+                            <label class="form-check-label" for="excluirPessoal">
+                                Excluir pessoal
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="excluirPensao">
+                            <label class="form-check-label" for="excluirPensao">
+                                Excluir pensão
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="excluirAdmissao">
+                            <label class="form-check-label" for="excluirAdmissao">
+                                Excluir admissão
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="excluirRelacao">
+                            <label class="form-check-label" for="excluirRelacao">
+                                Excluir acórdãos de relação
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-primary btn-sm">Aplicar Filtros</button>
+                        <button class="btn btn-outline-secondary btn-sm">Limpar Filtros</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conteúdo principal -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Acórdãos sobre Licitações e Contratos</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark-arrow-down"></i> CSV
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark-code"></i> JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="view-selector btn-group mb-4">
+                    <button type="button" class="btn view-btn active">
+                        <i class="bi bi-card-list"></i> Cards
+                    </button>
+                    <button type="button" class="btn view-btn">
+                        <i class="bi bi-clock-history"></i> Timeline
+                    </button>
+                    <button type="button" class="btn view-btn">
+                        <i class="bi bi-diagram-3"></i> Clusters
+                    </button>
+                </div>
+                
+                <!-- Visualização em Cards -->
+                <div class="card-view">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-type-icon"><i class="bi bi-file-text"></i></span>
+                                <strong>ACÓRDÃO Nº 1234/2023 - PLENÁRIO</strong>
+                            </div>
+                            <div class="card-favorite">
+                                <i class="bi bi-star"></i>
+                            </div>
+                        </div>
+                        <div class="card-metadata">
+                            <div>Relator: Ministro João Silva</div>
+                            <div>Data: 15/03/2023</div>
+                        </div>
+                        <div class="card-theme">
+                            <span class="theme-badge">Licitações e Contratos</span>
+                            <span class="subtheme-badge">Pregão Eletrônico</span>
+                        </div>
+                        <div class="card-summary">
+                            <p>Representação formulada a partir de trabalho realizado pela Secretaria de Controle Externo de Aquisições Logísticas (Selog) versando sobre pregão eletrônico para registro de preços destinado à contratação de serviços de manutenção predial. Análise de oitivas. Procedência parcial. Determinações. Ciência.</p>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">#PregãoEletrônico</span>
+                            <span class="tag">#RegistroDePreços</span>
+                            <span class="tag">#ManutençãoPredial</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-outline-primary btn-action">
+                                <i class="bi bi-file-earmark-text"></i> Ver Inteiro
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-bookmark"></i> Salvar
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-share"></i> Compartilhar
+                            </button>
+                            <button class="btn btn-sm btn-outline-success btn-action">
+                                <i class="bi bi-lightbulb"></i> Gerar Insight
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-type-icon"><i class="bi bi-file-text"></i></span>
+                                <strong>ACÓRDÃO Nº 2345/2023 - PRIMEIRA CÂMARA</strong>
+                            </div>
+                            <div class="card-favorite active">
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                        </div>
+                        <div class="card-metadata">
+                            <div>Relator: Ministro Carlos Oliveira</div>
+                            <div>Data: 22/04/2023</div>
+                        </div>
+                        <div class="card-theme">
+                            <span class="theme-badge">Licitações e Contratos</span>
+                            <span class="subtheme-badge">Dispensa de Licitação</span>
+                        </div>
+                        <div class="card-summary">
+                            <p>Representação. Contratação direta. Dispensa de licitação. Emergência. Ausência de planejamento. Contratação emergencial sucessiva. Restrição à competitividade. Sobrepreço. Procedência. Determinação. Ciência.</p>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">#DispensaDeLicitação</span>
+                            <span class="tag">#Emergência</span>
+                            <span class="tag">#Planejamento</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-outline-primary btn-action">
+                                <i class="bi bi-file-earmark-text"></i> Ver Inteiro
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-bookmark"></i> Salvar
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-share"></i> Compartilhar
+                            </button>
+                            <button class="btn btn-sm btn-outline-success btn-action">
+                                <i class="bi bi-lightbulb"></i> Gerar Insight
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-type-icon"><i class="bi bi-file-text"></i></span>
+                                <strong>ACÓRDÃO Nº 3456/2023 - SEGUNDA CÂMARA</strong>
+                            </div>
+                            <div class="card-favorite">
+                                <i class="bi bi-star"></i>
+                            </div>
+                        </div>
+                        <div class="card-metadata">
+                            <div>Relator: Ministro Paulo Santos</div>
+                            <div>Data: 10/05/2023</div>
+                        </div>
+                        <div class="card-theme">
+                            <span class="theme-badge">Licitações e Contratos</span>
+                            <span class="subtheme-badge">Inexigibilidade</span>
+                        </div>
+                        <div class="card-summary">
+                            <p>Tomada de contas especial. Contrato. Inexigibilidade de licitação. Singularidade do objeto. Notória especialização. Ausência de justificativa de preço. Sobrepreço. Superfaturamento. Débito. Multa.</p>
+                        </div>
+                        <div class="card-tags">
+                            <span class="tag">#Inexigibilidade</span>
+                            <span class="tag">#NotóriaEspecialização</span>
+                            <span class="tag">#Superfaturamento</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-sm btn-outline-primary btn-action">
+                                <i class="bi bi-file-earmark-text"></i> Ver Inteiro
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-bookmark"></i> Salvar
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary btn-action">
+                                <i class="bi bi-share"></i> Compartilhar
+                            </button>
+                            <button class="btn btn-sm btn-outline-success btn-action">
+                                <i class="bi bi-lightbulb"></i> Gerar Insight
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualização em Timeline (inicialmente oculta) -->
+                <div class="timeline-view" style="display: none;">
+                    <div class="timeline">
+                        <div class="timeline-line"></div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">15/03/2023</div>
+                                <div class="timeline-title">ACÓRDÃO Nº 1234/2023 - PLENÁRIO</div>
+                                <p>Representação formulada a partir de trabalho realizado pela Secretaria de Controle Externo de Aquisições Logísticas (Selog) versando sobre pregão eletrônico para registro de preços.</p>
+                                <button class="btn btn-sm btn-outline-primary">Ver Detalhes</button>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">22/04/2023</div>
+                                <div class="timeline-title">ACÓRDÃO Nº 2345/2023 - PRIMEIRA CÂMARA</div>
+                                <p>Representação. Contratação direta. Dispensa de licitação. Emergência. Ausência de planejamento. Contratação emergencial sucessiva.</p>
+                                <button class="btn btn-sm btn-outline-primary">Ver Detalhes</button>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">10/05/2023</div>
+                                <div class="timeline-title">ACÓRDÃO Nº 3456/2023 - SEGUNDA CÂMARA</div>
+                                <p>Tomada de contas especial. Contrato. Inexigibilidade de licitação. Singularidade do objeto. Notória especialização.</p>
+                                <button class="btn btn-sm btn-outline-primary">Ver Detalhes</button>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">18/06/2023</div>
+                                <div class="timeline-title">ACÓRDÃO Nº 4567/2023 - PLENÁRIO</div>
+                                <p>Auditoria. Fiscalização de orientação centralizada. Governança e gestão das aquisições. Falhas no planejamento das contratações.</p>
+                                <button class="btn btn-sm btn-outline-primary">Ver Detalhes</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visualização em Clusters (inicialmente oculta) -->
+                <div class="cluster-view" style="display: none;">
+                    <div class="cluster cluster-1">
+                        Pregão<br>Eletrônico<br>(45)
+                    </div>
+                    <div class="cluster cluster-2">
+                        Dispensa<br>de Licitação<br>(68)
+                    </div>
+                    <div class="cluster cluster-3">
+                        Inexigibilidade<br>(32)
+                    </div>
+                    <div class="cluster cluster-4">
+                        Aditivos<br>(25)
+                    </div>
+                    <div class="cluster cluster-5">
+                        Sanções<br>(38)
+                    </div>
+                </div>
+                
+                <!-- Paginação -->
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Anterior</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Próxima</a>
+                        </li>
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal para Visualização de Acórdão -->
+    <div class="modal fade" id="acordaoModal" tabindex="-1" aria-labelledby="acordaoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="acordaoModalLabel">ACÓRDÃO Nº 1234/2023 - PLENÁRIO</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="list-group">
+                                <a href="#" class="list-group-item list-group-item-action active">Ementa</a>
+                                <a href="#" class="list-group-item list-group-item-action">Sumário</a>
+                                <a href="#" class="list-group-item list-group-item-action">Relatório</a>
+                                <a href="#" class="list-group-item list-group-item-action">Voto</a>
+                                <a href="#" class="list-group-item list-group-item-action">Acórdão</a>
+                                <a href="#" class="list-group-item list-group-item-action">Anexos</a>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <strong>Relator:</strong> Ministro João Silva<br>
+                                <strong>Data da Sessão:</strong> 15/03/2023<br>
+                                <strong>Colegiado:</strong> Plenário
+                            </div>
+                            <div>
+                                <h6>EMENTA</h6>
+                                <p>Representação formulada a partir de trabalho realizado pela Secretaria de Controle Externo de Aquisições Logísticas (Selog) versando sobre pregão eletrônico para registro de preços destinado à contratação de serviços de manutenção predial. Análise de oitivas. Procedência parcial. Determinações. Ciência.</p>
+                                
+                                <h6>SUMÁRIO</h6>
+                                <p>Foram identificadas as seguintes irregularidades: (i) ausência de parcelamento do objeto sem a devida justificativa; (ii) exigência de qualificação técnica excessiva; (iii) ausência de critérios objetivos para avaliação da exequibilidade das propostas; e (iv) falhas na pesquisa de preços.</p>
+                                
+                                <p>O TCU determinou à entidade que, em futuras licitações: (i) avalie a viabilidade técnica e econômica do parcelamento do objeto; (ii) restrinja as exigências de qualificação técnica ao mínimo necessário; (iii) estabeleça critérios objetivos para avaliação da exequibilidade das propostas; e (iv) realize pesquisa de preços adequada, considerando diversas fontes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group me-auto">
+                        <button type="button" class="btn btn-outline-primary">
+                            <i class="bi bi-highlighter"></i> Destacar
+                        </button>
+                        <button type="button" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Anotar
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="bi bi-file-earmark-arrow-down"></i> Exportar
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="bi bi-share"></i> Compartilhar
+                        </button>
+                        <button type="button" class="btn btn-success">
+                            <i class="bi bi-lightbulb"></i> Gerar Insight
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Geração de Insight -->
+    <div class="modal fade" id="insightModal" tabindex="-1" aria-labelledby="insightModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="insightModalLabel">Gerar Insight para LinkedIn</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>Acórdão:</strong> Nº 1234/2023 - PLENÁRIO
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Formato</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="formatoInsight" id="formatoPadrao" checked>
+                            <label class="btn btn-outline-primary" for="formatoPadrao">Post Padrão</label>
+                            
+                            <input type="radio" class="btn-check" name="formatoInsight" id="formatoAnalise">
+                            <label class="btn btn-outline-primary" for="formatoAnalise">Análise Detalhada</label>
+                            
+                            <input type="radio" class="btn-check" name="formatoInsight" id="formatoDica">
+                            <label class="btn btn-outline-primary" for="formatoDica">Dica Rápida</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Título Sugerido</label>
+                        <input type="text" class="form-control" value="TCU define novos critérios para contratação de serviços de manutenção predial">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Conteúdo Gerado</label>
+                        <div class="card p-3">
+                            <p><strong>#Licitações #TCU #NovoEntendimento</strong></p>
+                            
+                            <p>O TCU, por meio do Acórdão 1234/2023-Plenário, estabeleceu importante precedente sobre contratação de serviços de manutenção predial.</p>
+                            
+                            <p><strong>Principais pontos:</strong><br>
+                            ✅ Necessidade de avaliar o parcelamento do objeto<br>
+                            ✅ Restrição das exigências de qualificação técnica ao mínimo necessário<br>
+                            ✅ Estabelecimento de critérios objetivos para avaliação da exequibilidade<br>
+                            ✅ Pesquisa de preços adequada, considerando diversas fontes</p>
+                            
+                            <p>📌 Relator: Min. João Silva<br>
+                            📌 Data: 15/03/2023</p>
+                            
+                            <p><strong>#DireitoAdministrativo #Licitações #NovaJurisprudência</strong></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button type="button" class="btn btn-outline-primary">
+                        <i class="bi bi-clipboard"></i> Copiar
+                    </button>
+                    <button type="button" class="btn btn-primary">
+                        <i class="bi bi-linkedin"></i> Compartilhar Diretamente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Alternar entre visualizações
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewButtons = document.querySelectorAll('.view-btn');
+            const cardView = document.querySelector('.card-view');
+            const timelineView = document.querySelector('.timeline-view');
+            const clusterView = document.querySelector('.cluster-view');
+            
+            viewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remover classe active de todos os botões
+                    viewButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Adicionar classe active ao botão clicado
+                    this.classList.add('active');
+                    
+                    // Ocultar todas as visualizações
+                    cardView.style.display = 'none';
+                    timelineView.style.display = 'none';
+                    clusterView.style.display = 'none';
+                    
+                    // Mostrar a visualização correspondente
+                    if (this.textContent.trim().includes('Cards')) {
+                        cardView.style.display = 'block';
+                    } else if (this.textContent.trim().includes('Timeline')) {
+                        timelineView.style.display = 'block';
+                    } else if (this.textContent.trim().includes('Clusters')) {
+                        clusterView.style.display = 'block';
+                    }
+                });
+            });
+            
+            // Configurar favoritos
+            const favoriteButtons = document.querySelectorAll('.card-favorite');
+            favoriteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const icon = this.querySelector('i');
+                    if (icon.classList.contains('bi-star')) {
+                        icon.classList.remove('bi-star');
+                        icon.classList.add('bi-star-fill');
+                        this.classList.add('active');
+                    } else {
+                        icon.classList.remove('bi-star-fill');
+                        icon.classList.add('bi-star');
+                        this.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Configurar botões "Ver Inteiro"
+            const viewDetailButtons = document.querySelectorAll('.btn-action:first-child');
+            const acordaoModal = new bootstrap.Modal(document.getElementById('acordaoModal'));
+            
+            viewDetailButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    acordaoModal.show();
+                });
+            });
+            
+            // Configurar botões "Gerar Insight"
+            const insightButtons = document.querySelectorAll('.btn-action:last-child');
+            const insightModal = new bootstrap.Modal(document.getElementById('insightModal'));
+            
+            insightButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    insightModal.show();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
