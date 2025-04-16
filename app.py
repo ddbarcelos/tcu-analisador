@@ -16,7 +16,7 @@ app = Flask(__name__)
 api_client = TCUJurisprudenciaAPI()
 analisador = AnalisadorAcordaos()
 gerador_insights = GeradorInsights()
-exportacao_service = ExportacaoService()
+exportacao_service = ExportacaoService()  # Usando a classe correta
 
 # Configuração
 RESULTADOS_POR_PAGINA = 20

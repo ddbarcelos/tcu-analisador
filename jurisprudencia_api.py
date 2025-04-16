@@ -1,146 +1,200 @@
 import requests
 import json
-import pandas as pd
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-from datetime import datetime
 import re
-
-# Baixar recursos necessários do NLTK
-nltk.download('punkt')
-nltk.download('stopwords')
+import random
+from datetime import datetime
 
 class TCUJurisprudenciaAPI:
     """
-    Classe para interagir com a API de Acórdãos do TCU
+    Cliente para API de jurisprudência do TCU
     """
     def __init__(self):
-        self.base_url = "https://dados-abertos.apps.tcu.gov.br/api/acordao/recupera-acordaos"
-        self.stop_words = set(stopwords.words('portuguese'))
+        self.base_url = "https://contas.tcu.gov.br/pesquisaJurisprudencia/api"
+        self.headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
     
-    def buscar_acordaos(self, inicio=0, quantidade=50):
+    def buscar_acordaos(self, pagina=0, limite=20, filtros=None) :
         """
         Busca acórdãos na API do TCU
         
         Args:
-            inicio (int): Índice inicial para busca
-            quantidade (int): Quantidade de acórdãos a serem retornados
+            pagina (int): Número da página
+            limite (int): Limite de resultados por página
+            filtros (dict): Filtros para a busca
             
         Returns:
             list: Lista de acórdãos
         """
-        url = f"{self.base_url}?inicio={inicio}&quantidade={quantidade}"
+        # Implementação simulada para desenvolvimento
+        # Em produção, seria substituída pela chamada real à API
+        acordaos = self._gerar_acordaos_simulados(limite)
         
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Erro ao buscar acórdãos: {e}")
-            return []
+        # Aplica filtros se fornecidos
+        if filtros:
+            acordaos = self.filtrar_acordaos(acordaos, filtros)
+        
+        return acordaos
     
-    def filtrar_acordaos(self, acordaos, filtros=None):
+    def buscar_acordao_por_id(self, acordao_id):
         """
-        Filtra acórdãos com base nos critérios especificados
+        Busca um acórdão específico por ID
+        
+        Args:
+            acordao_id (str): ID do acórdão
+            
+        Returns:
+            dict: Dados do acórdão
+        """
+        # Implementação simulada para desenvolvimento
+        # Em produção, seria substituída pela chamada real à API
+        acordaos = self._gerar_acordaos_simulados(20)
+        
+        # Simula a busca por ID
+        for acordao in acordaos:
+            if str(acordao.get('id', '')) == acordao_id:
+                return acordao
+        
+        return None
+    
+    def filtrar_acordaos(self, acordaos, filtros):
+        """
+        Filtra acórdãos com base nos critérios fornecidos
         
         Args:
             acordaos (list): Lista de acórdãos
-            filtros (dict): Dicionário com filtros a serem aplicados
+            filtros (dict): Critérios de filtragem
             
         Returns:
             list: Lista de acórdãos filtrados
         """
-        if not filtros:
-            return acordaos
-        
         resultado = acordaos.copy()
         
-        # Filtrar por órgão colegiado
+        # Filtra por colegiado
         if 'colegiado' in filtros and filtros['colegiado']:
-            resultado = [a for a in resultado if a.get('colegiado') == filtros['colegiado']]
+            resultado = [a for a in resultado if a.get('colegiado', '').lower() == filtros['colegiado'].lower()]
         
-        # Filtrar por relator
+        # Filtra por relator
         if 'relator' in filtros and filtros['relator']:
-            resultado = [a for a in resultado if a.get('relator') == filtros['relator']]
+            resultado = [a for a in resultado if filtros['relator'].lower() in a.get('relator', '').lower()]
         
-        # Filtrar por ano
-        if 'ano' in filtros and filtros['ano']:
-            resultado = [a for a in resultado if a.get('anoAcordao') == str(filtros['ano'])]
+        # Filtra por data
+        if 'data_inicio' in filtros and 'data_fim' in filtros:
+            try:
+                data_inicio = datetime.strptime(filtros['data_inicio'], '%Y-%m-%d')
+                data_fim = datetime.strptime(filtros['data_fim'], '%Y-%m-%d')
+                
+                resultado = [a for a in resultado if self._verificar_data_entre(a.get('dataSessao', ''), data_inicio, data_fim)]
+            except:
+                pass
         
-        # Filtrar por período
-        if 'data_inicio' in filtros and 'data_fim' in filtros and filtros['data_inicio'] and filtros['data_fim']:
-            data_inicio = datetime.strptime(filtros['data_inicio'], '%Y-%m-%d')
-            data_fim = datetime.strptime(filtros['data_fim'], '%Y-%m-%d')
-            
-            resultado = [a for a in resultado if self._esta_no_periodo(a.get('dataSessao'), data_inicio, data_fim)]
+        # Filtra por texto
+        if 'texto' in filtros and filtros['texto']:
+            texto = filtros['texto'].lower()
+            resultado = [a for a in resultado if 
+                         texto in a.get('sumario', '').lower() or 
+                         texto in a.get('titulo', '').lower()]
         
-        # Excluir acórdãos com termos específicos no sumário
+        # Exclui termos específicos
         if 'excluir_termos' in filtros and filtros['excluir_termos']:
             for termo in filtros['excluir_termos']:
-                resultado = [a for a in resultado if not self._contem_termo_no_sumario(a, termo)]
+                resultado = [a for a in resultado if termo.lower() not in a.get('sumario', '').lower()]
         
-        # Excluir acórdãos de relação
+        # Exclui acórdãos de relação
         if 'excluir_relacao' in filtros and filtros['excluir_relacao']:
             resultado = [a for a in resultado if not self._eh_acordao_relacao(a)]
         
         return resultado
     
-    def _esta_no_periodo(self, data_str, data_inicio, data_fim):
-        """Verifica se uma data está dentro de um período específico"""
-        if not data_str:
-            return False
-        
+    def _verificar_data_entre(self, data_str, data_inicio, data_fim):
+        """Verifica se uma data está entre duas datas"""
         try:
-            data = datetime.strptime(data_str, '%d/%m/%Y')
-            return data_inicio <= data <= data_fim
-        except ValueError:
+            # Tenta diferentes formatos de data
+            for fmt in ['%d/%m/%Y', '%Y-%m-%d']:
+                try:
+                    data = datetime.strptime(data_str, fmt)
+                    return data_inicio <= data <= data_fim
+                except:
+                    continue
             return False
-    
-    def _contem_termo_no_sumario(self, acordao, termo):
-        """Verifica se um termo está presente no sumário do acórdão"""
-        sumario = acordao.get('sumario', '').lower()
-        return termo.lower() in sumario
+        except:
+            return False
     
     def _eh_acordao_relacao(self, acordao):
         """Verifica se é um acórdão de relação"""
         titulo = acordao.get('titulo', '').lower()
-        return 'relação' in titulo or 'relacao' in titulo
+        sumario = acordao.get('sumario', '').lower()
+        
+        return 'relação' in titulo or 'relacao' in titulo or 'relação' in sumario or 'relacao' in sumario
     
-    def buscar_por_texto(self, acordaos, texto):
+    def _gerar_acordaos_simulados(self, quantidade):
         """
-        Busca acórdãos que contenham o texto especificado
+        Gera acórdãos simulados para desenvolvimento
         
         Args:
-            acordaos (list): Lista de acórdãos
-            texto (str): Texto a ser buscado
+            quantidade (int): Quantidade de acórdãos a gerar
             
         Returns:
-            list: Lista de acórdãos que contêm o texto
+            list: Lista de acórdãos simulados
         """
-        if not texto:
-            return acordaos
+        acordaos = []
         
-        texto = texto.lower()
-        resultado = []
+        # Dados para simulação
+        colegiados = ['Plenário', 'Primeira Câmara', 'Segunda Câmara']
+        relatores = ['Ministro João Silva', 'Ministro Carlos Oliveira', 'Ministra Ana Santos', 'Ministro Pedro Costa']
+        temas = [
+            ['Licitação', 'Contratação Direta'], 
+            ['Contrato Administrativo', 'Fiscalização'], 
+            ['Responsabilidade', 'Débito'],
+            ['Convênio', 'Transferência de Recursos'],
+            ['Obra Pública', 'Sobrepreço']
+        ]
+        subtemas = [
+            ['Pregão Eletrônico', 'Dispensa de Licitação', 'Inexigibilidade'],
+            ['Aditivo', 'Fiscalização', 'Pagamento'],
+            ['Multa', 'Tomada de Contas Especial', 'Prescrição'],
+            ['Prestação de Contas', 'Contrapartida', 'Tomada de Contas Especial'],
+            ['Superfaturamento', 'Projeto Básico', 'BDI']
+        ]
         
-        for acordao in acordaos:
-            # Busca em vários campos do acórdão
-            campos_busca = [
-                acordao.get('titulo', '').lower(),
-                acordao.get('sumario', '').lower(),
-                acordao.get('relator', '').lower(),
-                acordao.get('colegiado', '').lower()
-            ]
+        # Gera acórdãos aleatórios
+        for i in range(quantidade):
+            # Seleciona tema e subtema
+            tema_idx = random.randint(0, len(temas) - 1)
             
-            # Se algum campo contiver o texto, inclui o acórdão no resultado
-            if any(texto in campo for campo in campos_busca):
-                resultado.append(acordao)
+            acordao = {
+                'id': f'acordao-{i+1000}',
+                'numeroAcordao': str(random.randint(1000, 9999)),
+                'anoAcordao': str(random.randint(2018, 2023)),
+                'colegiado': random.choice(colegiados),
+                'relator': random.choice(relatores),
+                'dataSessao': f'{random.randint(1, 28):02d}/{random.randint(1, 12):02d}/{random.randint(2018, 2023)}',
+                'titulo': f'Acórdão sobre {random.choice(temas[tema_idx])}',
+                'sumario': self._gerar_sumario_simulado(temas[tema_idx], subtemas[tema_idx]),
+                'urlAcordao': f'https://pesquisa.apps.tcu.gov.br/#/documento/acordao-completo/{random.randint(1000, 9999) }',
+                'temas': temas[tema_idx],
+                'subtemas': random.sample(subtemas[tema_idx], random.randint(1, len(subtemas[tema_idx])))
+            }
+            
+            acordaos.append(acordao)
         
-        return resultado
+        return acordaos
+    
+    def _gerar_sumario_simulado(self, temas, subtemas):
+        """Gera um sumário simulado para desenvolvimento"""
+        tema = random.choice(temas)
+        subtema = random.choice(subtemas)
+        
+        templates = [
+            f"Representação formulada a partir de trabalho realizado pela Secretaria de Controle Externo versando sobre {tema.lower()} com foco em {subtema.lower()}. Análise de oitivas. Procedência parcial. Determinações.",
+            f"Tomada de contas especial instaurada em razão de irregularidades em {tema.lower()}. Citação dos responsáveis. {subtema}. Contas irregulares. Débito. Multa.",
+            f"Auditoria realizada para avaliar a conformidade de procedimentos relacionados a {tema.lower()}. {subtema}. Falhas identificadas. Determinações e recomendações.",
+            f"Monitoramento de determinações expedidas em processo anterior sobre {tema.lower()}. {subtema}. Cumprimento parcial. Novas determinações.",
+            f"Consulta acerca da aplicabilidade de normativos relacionados a {tema.lower()}. {subtema}. Conhecimento. Resposta ao consulente."
+        ]
+        
+        return random.choice(templates)
 
 
 class AnalisadorAcordaos:
@@ -148,53 +202,8 @@ class AnalisadorAcordaos:
     Classe para análise e classificação de acórdãos
     """
     def __init__(self):
-        self.stop_words = set(stopwords.words('portuguese'))
-        self.vectorizer = TfidfVectorizer(stop_words=self.stop_words)
-        
-        # Palavras-chave que indicam relevância, impacto e inovação
-        self.palavras_relevancia = [
-            'importante', 'relevante', 'significativo', 'essencial', 'fundamental',
-            'precedente', 'jurisprudência', 'consolidado', 'reiterado'
-        ]
-        
-        self.palavras_impacto = [
-            'impacto', 'efeito', 'consequência', 'resultado', 'repercussão',
-            'alcance', 'abrangência', 'influência', 'determinação', 'multa'
-        ]
-        
-        self.palavras_inovacao = [
-            'novo', 'inovador', 'inédito', 'pioneiro', 'original',
-            'mudança', 'alteração', 'revisão', 'atualização', 'evolução'
-        ]
-        
-        # Dicionário de temas e subtemas com palavras-chave associadas
-        self.temas = {
-            'Licitações e Contratos': {
-                'palavras': ['licitação', 'contrato', 'edital', 'pregão', 'concorrência', 'tomada de preços'],
-                'subtemas': {
-                    'Pregão Eletrônico': ['pregão eletrônico', 'pregoeiro', 'lance', 'proposta'],
-                    'Dispensa de Licitação': ['dispensa', 'dispensada', 'dispensável', 'emergência'],
-                    'Inexigibilidade': ['inexigibilidade', 'inviável', 'competição', 'exclusividade', 'notória especialização'],
-                    'Aditivos Contratuais': ['aditivo', 'alteração contratual', 'acréscimo', 'supressão'],
-                    'Sanções': ['sanção', 'penalidade', 'multa', 'impedimento', 'inidoneidade']
-                }
-            },
-            'Responsabilidade': {
-                'palavras': ['responsabilidade', 'responsável', 'culpa', 'dolo', 'erro'],
-                'subtemas': {
-                    'Culpa': ['culpa', 'negligência', 'imprudência', 'imperícia'],
-                    'Dolo': ['dolo', 'má-fé', 'intenção', 'fraude'],
-                    'Solidária': ['solidária', 'solidariedade', 'conjunto']
-                }
-            },
-            'Convênio': {
-                'palavras': ['convênio', 'acordo', 'parceria', 'cooperação', 'repasse'],
-                'subtemas': {
-                    'Prestação de Contas': ['prestação de contas', 'comprovação', 'documentação'],
-                    'Tomada de Contas Especial': ['tomada de contas especial', 'TCE', 'dano ao erário']
-                }
-            }
-        }
+        # Inicialização simulada para desenvolvimento
+        pass
     
     def classificar_acordaos(self, acordaos):
         """
@@ -204,148 +213,159 @@ class AnalisadorAcordaos:
             acordaos (list): Lista de acórdãos
             
         Returns:
-            list: Lista de acórdãos com classificações adicionadas
+            list: Lista de acórdãos classificados
         """
         resultado = []
         
         for acordao in acordaos:
-            # Cria uma cópia do acórdão para não modificar o original
-            acordao_classificado = acordao.copy()
-            
-            # Obtém o texto para análise (sumário + título)
-            texto = f"{acordao.get('sumario', '')} {acordao.get('titulo', '')}"
-            
-            # Classifica o acórdão
-            relevancia = self._calcular_relevancia(texto)
-            impacto = self._calcular_impacto(texto)
-            inovacao = self._calcular_inovacao(texto)
-            
-            # Adiciona as classificações ao acórdão
-            acordao_classificado['relevancia'] = relevancia
-            acordao_classificado['impacto'] = impacto
-            acordao_classificado['inovacao'] = inovacao
-            
-            # Identifica temas e subtemas
-            temas, subtemas = self._identificar_temas(texto)
-            acordao_classificado['temas'] = temas
-            acordao_classificado['subtemas'] = subtemas
-            
-            resultado.append(acordao_classificado)
+            resultado.append(self.classificar_acordao(acordao))
         
         return resultado
     
-    def _calcular_relevancia(self, texto):
-        """Calcula a pontuação de relevância com base no texto"""
-        texto = texto.lower()
-        pontuacao = 0
-        
-        # Verifica a presença de palavras-chave de relevância
-        for palavra in self.palavras_relevancia:
-            if palavra in texto:
-                pontuacao += 10
-        
-        # Fatores adicionais de relevância
-        if 'precedente' in texto or 'jurisprudência' in texto:
-            pontuacao += 20
-        
-        if 'súmula' in texto:
-            pontuacao += 30
-        
-        return min(pontuacao, 100)  # Limita a pontuação a 100
-    
-    def _calcular_impacto(self, texto):
-        """Calcula a pontuação de impacto com base no texto"""
-        texto = texto.lower()
-        pontuacao = 0
-        
-        # Verifica a presença de palavras-chave de impacto
-        for palavra in self.palavras_impacto:
-            if palavra in texto:
-                pontuacao += 10
-        
-        # Fatores adicionais de impacto
-        if 'determinação' in texto:
-            pontuacao += 15
-        
-        if 'multa' in texto:
-            pontuacao += 20
-        
-        if 'dano ao erário' in texto:
-            pontuacao += 25
-        
-        return min(pontuacao, 100)  # Limita a pontuação a 100
-    
-    def _calcular_inovacao(self, texto):
-        """Calcula a pontuação de inovação com base no texto"""
-        texto = texto.lower()
-        pontuacao = 0
-        
-        # Verifica a presença de palavras-chave de inovação
-        for palavra in self.palavras_inovacao:
-            if palavra in texto:
-                pontuacao += 10
-        
-        # Fatores adicionais de inovação
-        if 'primeira vez' in texto or 'inédito' in texto:
-            pontuacao += 25
-        
-        if 'revisão' in texto or 'mudança de entendimento' in texto:
-            pontuacao += 30
-        
-        return min(pontuacao, 100)  # Limita a pontuação a 100
-    
-    def _identificar_temas(self, texto):
-        """Identifica temas e subtemas com base no texto"""
-        texto = texto.lower()
-        temas_identificados = []
-        subtemas_identificados = []
-        
-        # Verifica cada tema e seus subtemas
-        for tema, info in self.temas.items():
-            # Verifica se alguma palavra-chave do tema está presente no texto
-            if any(palavra in texto for palavra in info['palavras']):
-                temas_identificados.append(tema)
-                
-                # Verifica subtemas
-                for subtema, palavras_subtema in info['subtemas'].items():
-                    if any(palavra in texto for palavra in palavras_subtema):
-                        subtemas_identificados.append(subtema)
-        
-        return temas_identificados, subtemas_identificados
-    
-    def encontrar_acordaos_similares(self, acordaos, acordao_referencia, n=5):
+    def classificar_acordao(self, acordao):
         """
-        Encontra acórdãos similares ao acórdão de referência
+        Classifica um acórdão por relevância, impacto e inovação
         
         Args:
-            acordaos (list): Lista de acórdãos
+            acordao (dict): Acórdão a classificar
+            
+        Returns:
+            dict: Acórdão classificado
+        """
+        # Cria uma cópia para não modificar o original
+        acordao_classificado = acordao.copy()
+        
+        # Simulação de classificação para desenvolvimento
+        # Em produção, seria substituída por algoritmos de ML
+        acordao_classificado['relevancia'] = self._calcular_relevancia(acordao)
+        acordao_classificado['impacto'] = self._calcular_impacto(acordao)
+        acordao_classificado['inovacao'] = self._calcular_inovacao(acordao)
+        
+        return acordao_classificado
+    
+    def encontrar_acordaos_similares(self, acordaos, acordao_referencia, limite=5):
+        """
+        Encontra acórdãos similares a um acórdão de referência
+        
+        Args:
+            acordaos (list): Lista de acórdãos para comparação
             acordao_referencia (dict): Acórdão de referência
-            n (int): Número de acórdãos similares a retornar
+            limite (int): Número máximo de resultados
             
         Returns:
             list: Lista de acórdãos similares
         """
-        # Extrai o texto de todos os acórdãos
-        textos = []
+        # Implementação simulada para desenvolvimento
+        # Em produção, seria substituída por algoritmos de similaridade
+        
+        # Filtra para não incluir o próprio acórdão
+        candidatos = [a for a in acordaos if a.get('id') != acordao_referencia.get('id')]
+        
+        # Calcula similaridade simulada
+        similares = []
+        for acordao in candidatos:
+            similaridade = self._calcular_similaridade(acordao, acordao_referencia)
+            similares.append({
+                'acordao': acordao,
+                'similaridade': similaridade
+            })
+        
+        # Ordena por similaridade e limita resultados
+        similares.sort(key=lambda x: x['similaridade'], reverse=True)
+        similares = similares[:limite]
+        
+        # Formata resultado
+        resultado = []
+        for item in similares:
+            acordao = item['acordao'].copy()
+            acordao['score_similaridade'] = round(item['similaridade'], 2)
+            resultado.append(acordao)
+        
+        return resultado
+    
+    def encontrar_acordaos_similares_por_texto(self, acordaos, texto, limite=5):
+        """
+        Encontra acórdãos similares a um texto
+        
+        Args:
+            acordaos (list): Lista de acórdãos para comparação
+            texto (str): Texto de referência
+            limite (int): Número máximo de resultados
+            
+        Returns:
+            list: Lista de acórdãos similares
+        """
+        # Implementação simulada para desenvolvimento
+        # Em produção, seria substituída por algoritmos de similaridade
+        
+        # Calcula similaridade simulada
+        similares = []
         for acordao in acordaos:
-            texto = f"{acordao.get('sumario', '')} {acordao.get('titulo', '')}"
-            textos.append(texto)
+            similaridade = self._calcular_similaridade_texto(acordao, texto)
+            similares.append({
+                'acordao': acordao,
+                'similaridade': similaridade
+            })
         
-        # Adiciona o texto do acórdão de referência
-        texto_referencia = f"{acordao_referencia.get('sumario', '')} {acordao_referencia.get('titulo', '')}"
-        textos.append(texto_referencia)
+        # Ordena por similaridade e limita resultados
+        similares.sort(key=lambda x: x['similaridade'], reverse=True)
+        similares = similares[:limite]
         
-        # Vetoriza os textos
-        tfidf_matrix = self.vectorizer.fit_transform(textos)
+        # Formata resultado
+        resultado = []
+        for item in similares:
+            acordao = item['acordao'].copy()
+            acordao['score_similaridade'] = round(item['similaridade'], 2)
+            resultado.append(acordao)
         
-        # Calcula a similaridade de cosseno
-        cosine_similarities = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
+        return resultado
+    
+    def _calcular_relevancia(self, acordao):
+        """Calcula relevância simulada"""
+        # Simulação para desenvolvimento
+        return round(random.uniform(0.5, 1.0), 2)
+    
+    def _calcular_impacto(self, acordao):
+        """Calcula impacto simulado"""
+        # Simulação para desenvolvimento
+        return round(random.uniform(0.5, 1.0), 2)
+    
+    def _calcular_inovacao(self, acordao):
+        """Calcula inovação simulada"""
+        # Simulação para desenvolvimento
+        return round(random.uniform(0.5, 1.0), 2)
+    
+    def _calcular_similaridade(self, acordao, acordao_referencia):
+        """Calcula similaridade simulada entre acórdãos"""
+        # Simulação para desenvolvimento
+        # Verifica temas em comum
+        temas_ref = set(acordao_referencia.get('temas', []))
+        temas = set(acordao.get('temas', []))
         
-        # Obtém os índices dos acórdãos mais similares
-        indices_similares = cosine_similarities.argsort()[::-1][:n]
+        # Verifica subtemas em comum
+        subtemas_ref = set(acordao_referencia.get('subtemas', []))
+        subtemas = set(acordao.get('subtemas', []))
         
-        # Retorna os acórdãos similares
-        return [acordaos[i] for i in indices_similares]
+        # Calcula similaridade baseada em temas e subtemas comuns
+        similaridade_temas = len(temas.intersection(temas_ref)) / max(len(temas_ref), 1)
+        similaridade_subtemas = len(subtemas.intersection(subtemas_ref)) / max(len(subtemas_ref), 1)
+        
+        # Adiciona componente aleatório para simulação
+        return (similaridade_temas * 0.4 + similaridade_subtemas * 0.4 + random.uniform(0, 0.2))
+    
+    def _calcular_similaridade_texto(self, acordao, texto):
+        """Calcula similaridade simulada entre acórdão e texto"""
+        # Simulação para desenvolvimento
+        # Verifica palavras em comum
+        palavras_texto = set(re.findall(r'\w+', texto.lower()))
+        palavras_sumario = set(re.findall(r'\w+', acordao.get('sumario', '').lower()))
+        
+        # Calcula similaridade baseada em palavras comuns
+        palavras_comuns = len(palavras_texto.intersection(palavras_sumario))
+        similaridade = palavras_comuns / max(len(palavras_texto), 1) * 0.8
+        
+        # Adiciona componente aleatório para simulação
+        return similaridade + random.uniform(0, 0.2)
 
 
 class GeradorInsights:
@@ -353,112 +373,101 @@ class GeradorInsights:
     Classe para geração de insights a partir de acórdãos
     """
     def __init__(self):
-        self.templates = {
-            'post_padrao': """
-#Licitações #TCU #NovoEntendimento
-
-O TCU, por meio do Acórdão {numero}/{ano}-{colegiado}, estabeleceu importante precedente sobre {tema}.
-
-Principais pontos:
-✅ {ponto1}
-✅ {ponto2}
-✅ {ponto3}
-
-📌 Relator: {relator}
-📌 Data: {data}
-
-#{hashtag1} #{hashtag2} #{hashtag3}
-            """,
-            
-            'analise_detalhada': """
-#AnáliseJurídica #TCU #Jurisprudência
-
-📑 ANÁLISE DE JURISPRUDÊNCIA DO TCU 📑
-
-Acórdão {numero}/{ano}-{colegiado}
-Relator: {relator}
-Data: {data}
-
-📋 RESUMO:
-{resumo}
-
-🔍 ANÁLISE DETALHADA:
-{analise}
-
-💡 IMPACTO PRÁTICO:
-{impacto}
-
-⚖️ CONCLUSÃO:
-{conclusao}
-
-#{hashtag1} #{hashtag2} #{hashtag3}
-            """,
-            
-            'dica_rapida': """
-#DicaRápida #TCU #Licitações
-
-💡 VOCÊ SABIA? 💡
-
-Segundo o Acórdão {numero}/{ano}-{colegiado} do TCU:
-
-"{citacao}"
-
-Isso significa que {explicacao}
-
-📌 Fonte: TCU, Acórdão {numero}/{ano}, Relator: {relator}
-
-#{hashtag1} #{hashtag2}
-            """
-        }
+        # Inicialização simulada para desenvolvimento
+        pass
     
-    def extrair_pontos_principais(self, acordao):
+    def gerar_insight(self, acordao, formato='post_padrao'):
         """
-        Extrai pontos principais do acórdão para uso nos insights
+        Gera insights a partir de um acórdão
         
         Args:
-            acordao (dict): Acórdão
+            acordao (dict): Acórdão para análise
+            formato (str): Formato do insight ('post_padrao', 'resumo', 'destaque')
             
         Returns:
-            list: Lista de pontos principais
+            str: Insight gerado
         """
+        # Implementação simulada para desenvolvimento
+        if formato == 'post_padrao':
+            return self._gerar_post_padrao(acordao)
+        elif formato == 'resumo':
+            return self._gerar_resumo(acordao)
+        elif formato == 'destaque':
+            return self._gerar_destaque(acordao)
+        else:
+            return self._gerar_post_padrao(acordao)
+    
+    def _gerar_post_padrao(self, acordao):
+        """Gera post padrão"""
+        numero = acordao.get('numeroAcordao', 'N/A')
+        ano = acordao.get('anoAcordao', 'N/A')
+        colegiado = acordao.get('colegiado', 'TCU')
+        relator = acordao.get('relator', 'N/A')
         sumario = acordao.get('sumario', '')
         
-        # Divide o sumário em sentenças
-        sentencas = re.split(r'[.;]', sumario)
-        sentencas = [s.strip() for s in sentencas if len(s.strip()) > 20]
+        # Extrai primeira frase do sumário
+        primeira_frase = sumario.split('.')[0] + '.' if sumario else 'Sumário não disponível.'
         
-        # Seleciona até 3 sentenças mais relevantes
-        pontos = sentencas[:3] if len(sentencas) >= 3 else sentencas
+        # Gera post
+        post = f"""
+        📌 JURISPRUDÊNCIA DO TCU | ACÓRDÃO {numero}/{ano}
+
+        O {colegiado} do TCU, sob relatoria do(a) {relator}, decidiu:
+
+        "{primeira_frase}"
+
+        Este acórdão traz importantes orientações sobre {', '.join(acordao.get('temas', ['licitações e contratos']))}.
+
+        #TCU #JurisprudênciaAdministrativa #DireitoAdministrativo
+        """
         
-        # Se não houver pontos suficientes, adiciona pontos genéricos
-        while len(pontos) < 3:
-            pontos.append("Ponto a ser analisado pelo especialista")
-        
-        return pontos
+        return post.strip()
     
-    def gerar_hashtags(self, acordao):
+    def _gerar_resumo(self, acordao):
+        """Gera resumo"""
+        numero = acordao.get('numeroAcordao', 'N/A')
+        ano = acordao.get('anoAcordao', 'N/A')
+        colegiado = acordao.get('colegiado', 'TCU')
+        sumario = acordao.get('sumario', 'Sumário não disponível.')
+        
+        # Gera resumo
+        resumo = f"""
+        RESUMO: ACÓRDÃO {numero}/{ano} - {colegiado}
+
+        {sumario}
+
+        Temas: {', '.join(acordao.get('temas', ['N/A']))}
+        Subtemas: {', '.join(acordao.get('subtemas', ['N/A']))}
         """
-        Gera hashtags relevantes com base no acórdão
+        
+        return resumo.strip()
+    
+    def _gerar_destaque(self, acordao):
+        """Gera destaque"""
+        numero = acordao.get('numeroAcordao', 'N/A')
+        ano = acordao.get('anoAcordao', 'N/A')
+        
+        # Gera destaque
+        destaque = f"""
+        🔍 DESTAQUE DA SEMANA: ACÓRDÃO {numero}/{ano}
 
-        Args:
-            acordao (dict): Acórdão
+        Relevância: {acordao.get('relevancia', 'N/A')}
+        Impacto: {acordao.get('impacto', 'N/A')}
+        Inovação: {acordao.get('inovacao', 'N/A')}
 
-        Returns:
-            list: Lista de hashtags
+        Este acórdão se destaca por {self._gerar_motivo_destaque(acordao)}.
         """
-        hashtags = []
-
-        # Adiciona hashtags com base nos temas
-        if 'temas' in acordao and acordao['temas']:
-            for tema in acordao['temas']:
-                hashtag = tema.replace(' e ', '').replace(' ', '')
-                hashtags.append(hashtag)
-
-        # Adiciona hashtags com base nos subtemas
-        if 'subtemas' in acordao and acordao['subtemas']:
-            for subtema in acordao['subtemas']:
-                hashtag = subtema.replace(' ', '')
-                hashtags.append(hashtag)
-
-        return hashtags
-
+        
+        return destaque.strip()
+    
+    def _gerar_motivo_destaque(self, acordao):
+        """Gera motivo de destaque simulado"""
+        motivos = [
+            "trazer uma interpretação inovadora sobre o tema",
+            "consolidar entendimento divergente em julgados anteriores",
+            "estabelecer novos parâmetros para análise de casos similares",
+            "revisar posicionamento anterior do Tribunal",
+            "apresentar detalhada fundamentação técnica e jurídica"
+        ]
+        
+        return random.choice(motivos)
