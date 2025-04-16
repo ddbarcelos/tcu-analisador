@@ -439,23 +439,26 @@ Isso significa que {explicacao}
     def gerar_hashtags(self, acordao):
         """
         Gera hashtags relevantes com base no acórdão
-        
+
         Args:
             acordao (dict): Acórdão
-            
+
         Returns:
             list: Lista de hashtags
         """
         hashtags = []
-        
-           # Adiciona hashtags com base nos temas
-    if 'temas' in acordao and acordao['temas']:
-           for tema in acordao['temas']:
+
+        # Adiciona hashtags com base nos temas
+        if 'temas' in acordao and acordao['temas']:
+            for tema in acordao['temas']:
                 hashtag = tema.replace(' e ', '').replace(' ', '')
                 hashtags.append(hashtag)
 
-    # Adiciona hashtags com base nos subtemas
-    if 'subtemas' in acordao and acordao['subtemas']:
+        # Adiciona hashtags com base nos subtemas
+        if 'subtemas' in acordao and acordao['subtemas']:
             for subtema in acordao['subtemas']:
-                   hashtag = subtema.replace(' ', '')
+                hashtag = subtema.replace(' ', '')
                 hashtags.append(hashtag)
+
+        return hashtags
+
