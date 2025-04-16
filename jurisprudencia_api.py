@@ -448,20 +448,7 @@ Isso significa que {explicacao}
         """
         hashtags = []
         
-        # Adiciona hashtags com base nos temas
-        if 'temas' in acordao and acordao['temas']:
-            for tema in acordao['temas']:
-                hashtag = tema.replace(' e ', '').replace(' ', '')
-                hashtags.append(hashtag)
-        
-        # Adiciona hashtags com base nos subtemas
-        if 'subtemas' in acordao and acordao['subtemas']:
-            for subtema in acordao['subtemas']:
-                hashtag = subtema.replace(' ', '')
-                
-(Content truncated due to size limit. Use line ranges to read in chunks)
-
-	# Adiciona hashtags com base nos temas
+       	# Adiciona hashtags com base nos temas
 	if 'temas' in acordao and acordao['temas']:
    	    for tema in acordao['temas']:
                 hashtag = tema.replace(' e ', '').replace(' ', '')
