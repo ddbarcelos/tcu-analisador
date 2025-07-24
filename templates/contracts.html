@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Contratos</h1>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Contratante</th><th>Objeto</th><th>Assinatura</th>
+      <th>Vencimento</th><th>Prazo</th><th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for c in contracts %}
+    {% set dl = c.vencimento|days_left %}
+    <tr>
+      <td>{{ c.contratante }}</td>
+      <td>{{ c.objeto }}</td>
+      <td>{{ c.assinatura }}</td>
+      <td>{{ c.vencimento }}</td>
+      <td>
+        <span class="badge {{ 'bg-danger' if dl <= c.aviso_dias else 'bg-success' }}">
+          {{ dl }} dias
+        </span>
+      </td>
+      <td>
+        <form action="/delete/{{ c.id }}" method="post" style="display:inline">
+          <button class="btn btn-sm btn-danger">Excluir</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<a href="/export" class="btn btn-primary">Exportar Excel</a>
+{% endblock %}
